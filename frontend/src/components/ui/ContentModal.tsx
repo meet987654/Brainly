@@ -67,7 +67,7 @@ export function ContentModal({ open, onClose }) {
                     const token = localStorage.getItem('token');
                     const fd = new FormData();
                     fd.append('file', file);
-                    const resp = await axios.post(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/v1/upload`, fd, {
+                    const resp = await axios.post(`${import.meta.env.VITE_BACKEND_URL || 'https://brainly-7s68.onrender.com/'}/api/v1/upload`, fd, {
                         headers: {
                             Authorization: `Bearer ${token}`,
                             'Content-Type': 'multipart/form-data'

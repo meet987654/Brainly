@@ -13,7 +13,7 @@ export interface Content {
 }
 
 // Get backend URL from environment variables
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://brainly-7s68.onrender.com/";
 
 export function useContent() {
   const [contents, setContents] = useState<Content[]>([]);
