@@ -4,12 +4,7 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import cors from 'cors';
-
-app.use(cors({
-    origin: "https://brainly-silk.vercel.app",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-}));
-
+app.use(cors());
 import {ContentModel, LinkModel} from './db.js'
 dotenv.config();
 app.use(express.json());
