@@ -1,0 +1,55 @@
+PS C:\Users\meetp\OneDrive\Desktop\brainly> npm init -y
+Wrote to C:\Users\meetp\OneDrive\Desktop\brainly\package.json:
+
+{
+  "name": "brainly",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
+
+
+
+PS C:\Users\meetp\OneDrive\Desktop\brainly> npm install -d typescript
+npm info using npm@10.9.3
+npm info using node@v22.19.0
+npm http fetch GET 200 https://registry.npmjs.org/typescript 777ms (cache revalidated)
+npm http cache typescript@https://registry.npmjs.org/typescript/-/typescript-5.9.2.tgz 0ms (cache hit)
+npm http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 383ms
+
+added 1 package, and audited 2 packages in 3s
+
+found 0 vulnerabilities
+npm info ok
+PS C:\Users\meetp\OneDrive\Desktop\brainly> npx tsc --init
+
+Created a new tsconfig.json                                                                                               
+                                                                                                                     TS   
+You can learn more at https://aka.ms/tsconfig
+
+
+PS C:\Users\meetp\OneDrive\Desktop\brainly> npm install express
+
+added 68 packages, and audited 70 packages in 7s
+
+16 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+PS C:\Users\meetp\OneDrive\Desktop\brainly> 
+
+
+Now create src folder with index.ts
+->Express.js is written in JavaScript, not TypeScript. When you use TypeScript with Express, you're essentially using:
+
+TypeScript code that gets compiled to JavaScript
+JavaScript libraries (Express) with TypeScript definitions bolted on top
+
+-> add "type":"module" in package.json for the error of 
+     ECMAScript imports and exports cannot be written in a CommonJS file under 'verbatimModuleSyntax'. 

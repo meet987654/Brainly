@@ -1,0 +1,80 @@
+name: Integration tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd="mongosh --eval 'db.adminCommand({ ping: 1 })' || exit 1"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Ensure netcat is available (for port checks)
+        run: sudo apt-get update && sudo apt-get install -y netcat
+
+      - name: Wait for MongoDB
+        run: |
+          echo "Waiting for MongoDB to be ready..."
+          for i in {1..30}; do
+            if nc -z localhost 27017; then
+              echo "MongoDB is listening" && break
+            fi
+            sleep 1
+          done
+
+      - name: Build & start backend
+        env:
+          MONGODB_URL: mongodb://localhost:27017/brainly_test
+          JWT_SECRET: test-secret-for-ci
+          BASE_URL: http://localhost:3000
+        run: |
+          npm run build
+          # start backend in background and capture logs
+          nohup node dist/index.js > backend.log 2>&1 &
+          # wait for backend to accept connections on port 3000
+          for i in {1..30}; do
+            if curl -sS http://localhost:3000 >/dev/null 2>&1; then
+              echo "Backend is up" && break
+            fi
+            sleep 1
+          done
+          echo "--- backend log (tail) ---"
+          tail -n 200 backend.log || true
+
+      - name: Run integration test
+        env:
+          BACKEND_URL: http://localhost:3000
+        run: |
+          cd frontend
+          npm run integration:test
+
+      - name: Upload backend log
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-log
+          path: backend.log
