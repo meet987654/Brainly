@@ -235,7 +235,7 @@ function Dashboard({ onLogout }: DashboardProps) {
       localStorage.removeItem("token");
       if (onLogout) onLogout();
       // Redirect user to auth/login route (your router has /auth)
-      window.location.href = "/auth";
+      window.location.href = "/";
     }
   };
 
