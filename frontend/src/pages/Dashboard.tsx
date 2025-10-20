@@ -1,8 +1,9 @@
+// src/pages/Dashboard.tsx
+import { useEffect, useRef, useState } from "react";
 import { PlusIcon } from "../icons/PlusIcon";
 import { ShareIcon } from "../icons/ShareIcon";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { useState, useEffect, useRef } from "react";
 import { useToast } from "../components/ui/Toast";
 import { ContentModal } from "../components/ui/ContentModal";
 import { SideBar } from "../components/ui/SideBar";
@@ -49,7 +50,7 @@ function Dashboard({ onLogout }: DashboardProps) {
     setIsMounted(true);
   }, []);
 
-  // Mouse tracking with throttling
+  // Mouse tracking throttled with rAF
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!mouseTicking.current) {
@@ -65,11 +66,10 @@ function Dashboard({ onLogout }: DashboardProps) {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  // Background glow animation
+  // Subtle automatic background glow movement
   useEffect(() => {
-    let animationFrame: number;
+    let animationFrame = 0;
     let time = 0;
-
     const animate = () => {
       if (!document.hidden) {
         time += 0.008;
@@ -79,12 +79,11 @@ function Dashboard({ onLogout }: DashboardProps) {
       }
       animationFrame = requestAnimationFrame(animate);
     };
-
     animate();
     return () => cancelAnimationFrame(animationFrame);
   }, []);
 
-  // Scroll handler
+  // Scroll progress (eased)
   useEffect(() => {
     const handleScroll = () => {
       if (!scrollTicking.current) {
@@ -107,9 +106,10 @@ function Dashboard({ onLogout }: DashboardProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load share link
+  // Load existing share link for the user
   useEffect(() => {
-    async function loadShare() {
+    let mounted = true;
+    (async function loadShare() {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
@@ -120,20 +120,25 @@ function Dashboard({ onLogout }: DashboardProps) {
 
         if (!res.ok) return;
         const data = await res.json();
-        if (data.share && data.hash) {
+        if (mounted && data.share && data.hash) {
           setShareLink(`${window.location.origin}/share/${data.hash}`);
         }
       } catch (err) {
-        console.error("Failed to load share link:", err);
+        // swallow — non-critical
+        // (optionally: show("Failed to load share link", "error"))
       }
-    }
-    loadShare();
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const toggleShare = async () => {
     setShareLoading(true);
     try {
       const token = localStorage.getItem("token");
+      if (!token) throw new Error("Not authenticated");
 
       if (!shareLink) {
         const res = await fetch(`${BACKEND_URL}/api/v1/brain/share`, {
@@ -146,7 +151,6 @@ function Dashboard({ onLogout }: DashboardProps) {
         });
 
         if (!res.ok) throw new Error("Failed to create share link");
-
         const data = await res.json();
         const newLink = `${window.location.origin}/share/${data.hash}`;
         setShareLink(newLink);
@@ -162,23 +166,22 @@ function Dashboard({ onLogout }: DashboardProps) {
         });
 
         if (!res.ok) throw new Error("Failed to remove share link");
-
         setShareLink(null);
         show("Share link removed", "success");
       }
     } catch (err: any) {
-      console.error("Share toggle failed:", err);
-      show(err.message || "Failed to toggle share", "error");
+      show(err?.message || "Failed to toggle share", "error");
     } finally {
       setShareLoading(false);
     }
   };
 
   const copyShareLink = () => {
-    if (shareLink) {
-      navigator.clipboard.writeText(shareLink);
-      show("Link copied to clipboard!", "success");
-    }
+    if (!shareLink) return;
+    navigator.clipboard.writeText(shareLink).then(
+      () => show("Link copied to clipboard!", "success"),
+      () => show("Copy failed", "error")
+    );
   };
 
   const floatingIcons = [
@@ -189,7 +192,7 @@ function Dashboard({ onLogout }: DashboardProps) {
     { Icon: Youtube, bgColor: "bg-yellow-500/70", position: { x: 270, y: 270 }, delay: 2.5, size: 30 },
   ];
 
-  const heroCenter = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  const heroCenter = { x: typeof window !== "undefined" ? window.innerWidth / 2 : 0, y: typeof window !== "undefined" ? window.innerHeight / 2 : 0 };
   const offsetX = (mousePosition.x - heroCenter.x) * 0.02;
   const offsetY = (mousePosition.y - heroCenter.y) * 0.02;
 
@@ -209,8 +212,30 @@ function Dashboard({ onLogout }: DashboardProps) {
       show("Content deleted", "success");
       await refresh();
     } catch (err: any) {
-      console.error("Delete failed", err);
       show(err?.message || "Delete failed", "error");
+    }
+  };
+
+  // Unified logout: attempt backend logout (optional), always clear local token and redirect
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        // backend logout is optional — backend may or may not implement it
+        await fetch(`${BACKEND_URL}/api/v1/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }).catch(() => {
+          /* ignore network errors — we'll still clear local token */
+        });
+      }
+    } finally {
+      localStorage.removeItem("token");
+      if (onLogout) onLogout();
+      // Redirect user to auth/login route (your router has /auth)
+      window.location.href = "/auth";
     }
   };
 
@@ -224,7 +249,8 @@ function Dashboard({ onLogout }: DashboardProps) {
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden fixed top-6 left-6 z-40 p-3 bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl shadow-lg text-white hover:shadow-purple-500/50 transition-all duration-300 hover:scale-110"
-          style={{ boxShadow: '0 4px 24px rgba(168, 85, 247, 0.4)' }}
+          style={{ boxShadow: "0 4px 24px rgba(168,85,247,0.4)" }}
+          aria-label="Open menu"
         >
           <Menu size={24} strokeWidth={2} />
         </button>
@@ -234,13 +260,13 @@ function Dashboard({ onLogout }: DashboardProps) {
       <div
         className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-700 opacity-100"
         style={{
-          background: `radial-gradient(800px circle at ${autoGlowPosition.x}px ${autoGlowPosition.y}px, rgba(139, 92, 246, 0.15), transparent 80%)`,
+          background: `radial-gradient(800px circle at ${autoGlowPosition.x}px ${autoGlowPosition.y}px, rgba(139,92,246,0.15), transparent 80%)`,
         }}
       />
       <div
         className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-700 opacity-100"
         style={{
-          background: `radial-gradient(500px circle at ${autoGlowPosition.x}px ${autoGlowPosition.y}px, rgba(168, 85, 247, 0.1), transparent 70%)`,
+          background: `radial-gradient(500px circle at ${autoGlowPosition.x}px ${autoGlowPosition.y}px, rgba(168,85,247,0.1), transparent 70%)`,
         }}
       />
 
@@ -263,13 +289,10 @@ function Dashboard({ onLogout }: DashboardProps) {
             sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           }`}
         >
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-            onClick={() => setSidebarOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
           <div className="absolute left-0 top-0 bottom-0 w-full max-w-sm">
             <SideBar
-              isOpen={true}
+              isOpen
               selectedType={selectedType}
               onSelectType={(t) => {
                 setSelectedType(t);
@@ -357,13 +380,9 @@ function Dashboard({ onLogout }: DashboardProps) {
             <div className="bg-black/10 backdrop-blur-lg border border-white/20 shadow-2xl p-4 sm:p-6 md:p-8 min-h-screen rounded-t-3xl">
               {/* Top Controls */}
               <div className="m-2 sm:m-4 relative">
-                {/* Logout Button - Mobile: Small & Top Right Corner */}
+                {/* Logout Button - Mobile */}
                 <button
-                  onClick={() => {
-                    localStorage.removeItem("token");
-                    if (onLogout) onLogout();
-                    window.location.href = "/auth";
-                  }}
+                  onClick={handleLogout}
                   className="sm:hidden absolute top-0 right-0 px-3 py-1.5 bg-transparent border border-red-600 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-colors text-xs"
                 >
                   Logout
@@ -371,13 +390,7 @@ function Dashboard({ onLogout }: DashboardProps) {
 
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 pt-12 sm:pt-0">
                   <div className="flex w-full sm:w-auto flex-col sm:flex-row items-center gap-3 sm:gap-4">
-                    <Button
-                      variant="primary"
-                      size="medium"
-                      text="Add Content"
-                      startIcon={<PlusIcon size="medium" />}
-                      onClick={() => setModalOpen(true)}
-                    />
+                    <Button variant="primary" size="medium" text="Add Content" startIcon={<PlusIcon size="medium" />} onClick={() => setModalOpen(true)} />
 
                     <Button
                       variant="secondary"
@@ -390,16 +403,8 @@ function Dashboard({ onLogout }: DashboardProps) {
 
                     {shareLink && (
                       <div className="flex w-full sm:w-auto flex-col sm:flex-row items-center gap-2 bg-slate-800/50 rounded-lg px-2 sm:px-3 py-1 border border-purple-500/30">
-                        <input
-                          type="text"
-                          readOnly
-                          value={shareLink}
-                          className="bg-transparent text-white text-xs sm:text-sm outline-none w-full sm:w-64"
-                        />
-                        <button
-                          onClick={copyShareLink}
-                          className="px-3 py-1.5 bg-purple-600 rounded text-white text-xs sm:text-sm hover:bg-purple-700 transition-colors w-full sm:w-auto"
-                        >
+                        <input type="text" readOnly value={shareLink} className="bg-transparent text-white text-xs sm:text-sm outline-none w-full sm:w-64" />
+                        <button onClick={copyShareLink} className="px-3 py-1.5 bg-purple-600 rounded text-white text-xs sm:text-sm hover:bg-purple-700 transition-colors w-full sm:w-auto">
                           Copy
                         </button>
                       </div>
@@ -408,11 +413,7 @@ function Dashboard({ onLogout }: DashboardProps) {
 
                   {/* Logout Button - Desktop */}
                   <button
-                    onClick={() => {
-                      localStorage.removeItem("token");
-                      if (onLogout) onLogout();
-                      window.location.href = "/auth";
-                    }}
+                    onClick={handleLogout}
                     className="hidden sm:inline-flex items-center px-4 py-2 bg-transparent border border-red-600 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-colors"
                   >
                     Logout
@@ -428,9 +429,7 @@ function Dashboard({ onLogout }: DashboardProps) {
                   </h2>
                 </div>
                 <div>
-                  <p className="text-gray-400 text-sm sm:text-base md:text-lg opacity-90">
-                    {loading ? "Loading your content..." : `${displayedCount} items saved`}
-                  </p>
+                  <p className="text-gray-400 text-sm sm:text-base md:text-lg opacity-90">{loading ? "Loading your content..." : `${displayedCount} items saved`}</p>
                 </div>
               </div>
 
@@ -438,7 +437,7 @@ function Dashboard({ onLogout }: DashboardProps) {
               <div className="m-2 sm:m-4 flex gap-4 sm:gap-6 flex-wrap">
                 {loading && (
                   <div className="w-full text-center py-10">
-                    <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-purple-500"></div>
+                    <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-purple-500" />
                     <p className="text-gray-400 mt-4">Loading your content...</p>
                   </div>
                 )}
@@ -446,10 +445,7 @@ function Dashboard({ onLogout }: DashboardProps) {
                 {error && (
                   <div className="w-full text-center py-12">
                     <p className="text-red-400">{error}</p>
-                    <button
-                      onClick={refresh}
-                      className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                    >
+                    <button onClick={refresh} className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                       Retry
                     </button>
                   </div>
@@ -464,14 +460,7 @@ function Dashboard({ onLogout }: DashboardProps) {
                 {!loading &&
                   !error &&
                   displayedContents.map((content: any) => (
-                    <Card
-                      key={content._id}
-                      id={content._id}
-                      title={content.title}
-                      type={content.type}
-                      link={content.link}
-                      onDelete={handleDelete}
-                    />
+                    <Card key={content._id} id={content._id} title={content.title} type={content.type} link={content.link} onDelete={handleDelete} />
                   ))}
               </div>
             </div>
@@ -482,20 +471,10 @@ function Dashboard({ onLogout }: DashboardProps) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
 
-        html, body {
-          scroll-behavior: smooth;
-          overflow-x: hidden !important;
-        }
+        html, body { scroll-behavior: smooth; overflow-x: hidden !important; }
 
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-
-        @keyframes floatGroup {
-          0%, 100% { transform: translate(-50%, -50%) translateY(0); }
-          50% { transform: translate(-50%, -50%) translateY(-10px); }
-        }
+        @keyframes bounce { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-8px); } }
+        @keyframes floatGroup { 0%,100%{ transform: translate(-50%,-50%) translateY(0); } 50%{ transform: translate(-50%,-50%) translateY(-10px); } }
       `}</style>
     </div>
   );
