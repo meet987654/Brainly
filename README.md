@@ -2,20 +2,20 @@
 
 This README explains how to run the backend and frontend locally for development, along with deployed production URLs.
 
-## 🚀 Deployed URLs
+##  Deployed URLs
 Frontend (Production): **https://brainly-silk.vercel.app/**  
 Backend (Production API): **https://brainly-7s68.onrender.com**
 
 ---
 
-## 📌 Prerequisites
+##  Prerequisites
 - Node.js (16+ recommended)
 - npm
 - MongoDB connection (local or hosted)
 
 ---
 
-## 📁 Repository Layout
+## Repository Layout
 ```
 src/        → backend TypeScript source
 frontend/   → Vite + React frontend
@@ -23,7 +23,7 @@ frontend/   → Vite + React frontend
 
 ---
 
-## 🔧 Environment Variables
+##  Environment Variables
 Create a `.env` file in the project root:
 
 ```env
@@ -41,7 +41,7 @@ VITE_BACKEND_URL="http://localhost:3000"
 
 ---
 
-## ▶️ Run Backend
+##  Run Backend
 
 ```powershell
 cd c:\Users\meetp\OneDrive\Desktop\brainly
@@ -51,7 +51,7 @@ npm run start
 
 ---
 
-## ▶️ Run Frontend (Development)
+## Run Frontend (Development)
 
 ```powershell
 cd c:\Users\meetp\OneDrive\Desktop\brainly\frontend
@@ -64,7 +64,7 @@ npm run dev
 
 ---
 
-## 🏗️ Production Build (Frontend)
+## Production Build (Frontend)
 
 ```powershell
 cd c:\Users\meetp\OneDrive\Desktop\brainly\frontend
@@ -73,7 +73,7 @@ npm run build
 
 ---
 
-## 📝 Notes
+## Notes
 - The backend expects the auth token in the standard header:
   ```
   Authorization: Bearer <JWT>
