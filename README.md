@@ -1,4 +1,4 @@
-# Brainly
+# Second Brain App
 
 This README explains how to run the backend and frontend locally for development, along with deployed production URLs.
 
